@@ -1,0 +1,22 @@
+// A simple Gosu program to test the parser
+
+class TestClass {
+  
+  // Method with parameters and return type
+  function add(int x, int y) : int {
+    return x + y
+  }
+  
+  // Another method with different logic
+  function multiply(int a, int b) : int {
+    return a * b
+  }
+  
+  // A method with a void return type
+  function printMessage() : void {
+    print("Hello, World!")
+  }
+  
+  // A field with a default value
+  var counter : int = 10
+}
