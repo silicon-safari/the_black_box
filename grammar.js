@@ -1,3 +1,6 @@
+const DIGITS = token(choice('0', seq(/[1-9]/, optional(seq(optional('_'), sep1(/[0-9]+/, /_+/))))));
+const DECIMAL_DIGITS = token(sep1(/[0-9]+/, '_'));
+const HEX_DIGITS = token(sep1(/[A-Fa-f0-9]+/, '_'));
 const PREC = {
   COMMENT: 0, // Comments
   ASSIGN: 1, // Assignments
@@ -72,7 +75,7 @@ module.exports = grammar({
 
     variable_declaration: $ => prec(PREC.DECL, seq(
       optional($.modifiers),
-      $.type,
+      optional(seq(":", $.type)),
       $.identifier,
       optional(seq('=', $.expression)),
       ';'
@@ -217,10 +220,37 @@ module.exports = grammar({
   ],
 });
 
+/**
+ * Creates a rule to match one or more of the rules separated by `separator`
+ *
+ * @param {RuleOrLiteral} rule
+ *
+ * @param {RuleOrLiteral} separator
+ *
+ * @returns {SeqRule}
+ */
+function sep1(rule, separator) {
+  return seq(rule, repeat(seq(separator, rule)));
+}
+
+/**
+ * Creates a rule to match one or more of the rules separated by a comma
+ *
+ * @param {RuleOrLiteral} rule
+ *
+ * @returns {SeqRule}
+ */
 function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
 }
 
+/**
+ * Creates a rule to optionally match one or more of the rules separated by a comma
+ *
+ * @param {RuleOrLiteral} rule
+ *
+ * @returns {ChoiceRule}
+ */
 function commaSep(rule) {
   return optional(commaSep1(rule));
 }
