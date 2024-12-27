@@ -43,6 +43,7 @@ module.exports = grammar({
     $._simple_type,
     $.annotation
   ],
+  word: $ => $.identifier,
 
   rules: {
     program: $ => repeat($._toplevel_statement),
