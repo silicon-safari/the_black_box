@@ -30,6 +30,16 @@ module.exports = grammar({
     $.block_comment,
     /\s/,
   ],
+  supertypes: $ => [
+    $.expression,
+    $.declaration,
+    $.statement,
+    $.primary_expression,
+    $._literal,
+    $.type,
+    $._simple_type,
+    $.annotation
+  ],
 
   rules: {
     program: $ => repeat($._toplevel_statement),
@@ -39,6 +49,21 @@ module.exports = grammar({
       $.method_declaration,
       $.class_declaration
     ),
+    declaration: $ => choice(
+      $.variable_declaration,     // Variable declarations
+      $.method_declaration,       // Method declarations
+      $.class_declaration         // Class declarations
+    ),    
+    _literal: $ => choice(
+      $.number_literal,   // Number literals (e.g., 123, 3.14)
+      $.string_literal,   // String literals (e.g., "hello")
+      $.boolean_literal,  // Boolean literals (true, false)
+      $.null_literal      // Null literal (null)
+    ),
+    number_literal: $ => /[0-9]+(\.[0-9]+)?/, // Matches integers and floating point numbers
+    string_literal: $ => /"[^"]*"/,            // Matches strings inside quotes
+    boolean_literal: $ => choice('true', 'false'), // Boolean literals (true, false)
+    null_literal: $ => 'null',                  // Null literal
 
     statement: $ => choice(
       $.variable_declaration,

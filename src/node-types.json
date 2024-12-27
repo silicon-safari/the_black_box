@@ -1,5 +1,95 @@
 [
   {
+    "type": "_simple_type",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "boolean",
+        "named": false
+      },
+      {
+        "type": "float",
+        "named": false
+      },
+      {
+        "type": "identifier",
+        "named": true
+      },
+      {
+        "type": "int",
+        "named": false
+      },
+      {
+        "type": "string",
+        "named": false
+      }
+    ]
+  },
+  {
+    "type": "expression",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "assignment_expression",
+        "named": true
+      },
+      {
+        "type": "binary_expression",
+        "named": true
+      },
+      {
+        "type": "primary_expression",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "primary_expression",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "identifier",
+        "named": true
+      },
+      {
+        "type": "number",
+        "named": true
+      },
+      {
+        "type": "string",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "statement",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "expression_statement",
+        "named": true
+      },
+      {
+        "type": "variable_declaration",
+        "named": true
+      }
+    ]
+  },
+  {
+    "type": "type",
+    "named": true,
+    "subtypes": [
+      {
+        "type": "_simple_type",
+        "named": true
+      },
+      {
+        "type": "identifier",
+        "named": true
+      }
+    ]
+  },
+  {
     "type": "assignment_expression",
     "named": true,
     "fields": {},
@@ -103,29 +193,6 @@
     }
   },
   {
-    "type": "expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "assignment_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "primary_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "expression_statement",
     "named": true,
     "fields": {},
@@ -165,10 +232,6 @@
       "types": [
         {
           "type": "expression",
-          "named": true
-        },
-        {
-          "type": "identifier",
           "named": true
         },
         {
@@ -242,10 +305,6 @@
       "required": true,
       "types": [
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "type",
           "named": true
         }
@@ -262,29 +321,6 @@
       "types": [
         {
           "type": "parameter",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "primary_expression",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "number",
-          "named": true
-        },
-        {
-          "type": "string",
           "named": true
         }
       ]
@@ -330,40 +366,6 @@
     }
   },
   {
-    "type": "statement",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression_statement",
-          "named": true
-        },
-        {
-          "type": "variable_declaration",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "type",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "variable_declaration",
     "named": true,
     "fields": {},
@@ -373,10 +375,6 @@
       "types": [
         {
           "type": "expression",
-          "named": true
-        },
-        {
-          "type": "identifier",
           "named": true
         },
         {
@@ -548,11 +546,11 @@
   },
   {
     "type": "string",
-    "named": true
+    "named": false
   },
   {
     "type": "string",
-    "named": false
+    "named": true
   },
   {
     "type": "synchronized",

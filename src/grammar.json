@@ -26,6 +26,69 @@
         }
       ]
     },
+    "declaration": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "variable_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "method_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "class_declaration"
+        }
+      ]
+    },
+    "_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "number_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "string_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "boolean_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "null_literal"
+        }
+      ]
+    },
+    "number_literal": {
+      "type": "PATTERN",
+      "value": "[0-9]+(\\.[0-9]+)?"
+    },
+    "string_literal": {
+      "type": "PATTERN",
+      "value": "\"[^\"]*\""
+    },
+    "boolean_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "true"
+        },
+        {
+          "type": "STRING",
+          "value": "false"
+        }
+      ]
+    },
+    "null_literal": {
+      "type": "STRING",
+      "value": "null"
+    },
     "statement": {
       "type": "CHOICE",
       "members": [
@@ -1010,5 +1073,14 @@
   "precedences": [],
   "externals": [],
   "inline": [],
-  "supertypes": []
+  "supertypes": [
+    "expression",
+    "declaration",
+    "statement",
+    "primary_expression",
+    "_literal",
+    "type",
+    "_simple_type",
+    "annotation"
+  ]
 }
