@@ -557,6 +557,10 @@
     "named": false
   },
   {
+    "type": "var",
+    "named": false
+  },
+  {
     "type": "{",
     "named": false
   },

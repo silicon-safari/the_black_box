@@ -143,6 +143,10 @@
             ]
           },
           {
+            "type": "STRING",
+            "value": "var"
+          },
+          {
             "type": "SYMBOL",
             "name": "identifier"
           },

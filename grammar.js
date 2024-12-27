@@ -49,9 +49,9 @@ module.exports = grammar({
     program: $ => repeat($._toplevel_statement),
 
     _toplevel_statement: $ => choice(
-      $.statement,
-      $.method_declaration,
-      $.class_declaration
+      $.statement,          // Statements
+      $.method_declaration, // For method and function declarations
+      $.class_declaration   // For class Declarations
     ),
     declaration: $ => choice(
       $.variable_declaration,     // Variable declarations
@@ -70,15 +70,16 @@ module.exports = grammar({
     null_literal: $ => 'null',                  // Null literal
 
     statement: $ => choice(
-      $.variable_declaration,
-      $.expression_statement
+      $.variable_declaration, // For variable based statements
+      $.expression_statement  // For expression based statements
     ),
 
     variable_declaration: $ => prec(PREC.DECL, seq(
-      optional($.modifiers),
-      optional(seq(":", $.type)),
-      $.identifier,
-      optional(seq('=', $.expression)),
+      optional($.modifiers),              // Optional thingy to declare the access modifiers for the variables
+      optional(seq(":", $.type)),         // Optional thingy to declare the type of the variable(For eg. --- int, String, .... etc)
+      'var',
+      $.identifier,                       // Compulsion thingy to write var before declaring the variable :))
+      optional(seq('=', $.expression)),   // Optional thingy to assign value to the variable
       ';'
     )),
 
