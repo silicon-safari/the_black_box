@@ -15,5 +15,5 @@ class TestClass {
   }
   
   // A field with a default value
-  var counter = 10;
+  var counter : int = 10;
 }
