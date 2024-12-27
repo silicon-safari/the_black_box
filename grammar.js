@@ -70,11 +70,28 @@ module.exports = grammar({
     ),
 
     _literal: $ => choice(
+      $.decimal_integer_literal,
+      $.hex_integer_literal,
       $.number_literal,   // Number literals (e.g., 123, 3.14).
       $.string_literal,   // String literals (e.g., "hello").
       $.boolean_literal,  // Boolean literals (true, false).
       $.null_literal      // Null literal (null).
     ),
+    decimal_integer_literal: _ => token(seq(
+      DIGITS,
+      optional(choice('l', 'L')),
+    )),
+    // Matches decimal integer literal
+
+    hex_integer_literal: _ => token(seq(
+      choice('0x', '0X'),
+      HEX_DIGITS,
+      optional(choice('l', 'L')),
+    )),
+    // Matches the hexadecimal int
+
+    
+
 
     number_literal: $ => /[0-9]+(\.[0-9]+)?/, 
     // Matches integers and floating-point numbers.
