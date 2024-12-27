@@ -72,6 +72,10 @@ module.exports = grammar({
     _literal: $ => choice(
       $.decimal_integer_literal,
       $.hex_integer_literal,
+      $.octal_integer_literal,
+      $.binary_integer_literal,
+      $.decimal_floating_point_literal,
+      $.hex_floating_point_literal,
       $.number_literal,   // Number literals (e.g., 123, 3.14).
       $.string_literal,   // String literals (e.g., "hello").
       $.boolean_literal,  // Boolean literals (true, false).
@@ -90,7 +94,44 @@ module.exports = grammar({
     )),
     // Matches the hexadecimal int
 
-    
+    octal_integer_literal: _ => token(seq(
+      choice('0o', '0O', '0'),
+      sep1(/[0-7]+/, '_'),
+      optional(choice('l', 'L')),
+    )),
+    // Matches the Octal int
+
+    binary_integer_literal: _ => token(seq(
+      choice('0b', '0B'),
+      sep1(/[01]+/, '_'),
+      optional(choice('l', 'L')),
+    )),
+    // Matches the binary int
+
+    decimal_floating_point_literal: _ => token(choice(
+      seq(DECIMAL_DIGITS, '.', optional(DECIMAL_DIGITS), optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
+      seq('.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
+      seq(DIGITS, /[eE]/, optional(choice('-', '+')), DECIMAL_DIGITS, optional(/[fFdD]/)),
+      seq(DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), (/[fFdD]/)),
+    )),
+    // floating point literal
+
+    hex_floating_point_literal: _ => token(seq(
+      choice('0x', '0X'),
+      choice(
+        seq(HEX_DIGITS, optional('.')),
+        seq(optional(HEX_DIGITS), '.', HEX_DIGITS),
+      ),
+      optional(seq(
+        /[pP]/,
+        optional(choice('-', '+')),
+        DIGITS,
+        optional(/[fFdD]/),
+      )),
+    )),
+    // hex floating point literal
+
+
 
 
     number_literal: $ => /[0-9]+(\.[0-9]+)?/, 
