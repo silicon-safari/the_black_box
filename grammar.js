@@ -66,6 +66,10 @@ module.exports = grammar({
     [$._unannotated_type, $.scoped_type_identifier],
     [$._unannotated_type, $.generic_type],
     [$.generic_type, $.primary_expression],
+    [$.lambda_expression, $.primary_expression],
+    [$.inferred_parameter, $.primary_expression],
+    [$.argument_list, $.record_pattern_body],
+    [$.yield_statement, $._reserved_identifier],
   ],
 
   word: $ => $.identifier, // Defines the default "word" for highlighting.
@@ -392,6 +396,45 @@ module.exports = grammar({
       commaSep($.type),          // One or more type parameters, separated by commas
       '>'                        // Closing angle bracket
     ),
+    lambda_expression: $ => seq(
+      '(',                      // Opening parenthesis for parameters
+      optional(commaSep($.identifier)),  // Parameters, separated by commas (if any)
+      ')',                      // Closing parenthesis for parameters
+      '->',                     // Arrow symbol separating parameters from body
+      $.expression              // The body of the lambda expression
+    ),
+    inferred_parameter: $ => $.identifier,  // Inferred parameters are just identifiers
+
+    lambda_expression: $ => seq(
+      '(',                     // Opening parenthesis for parameters
+      optional(commaSep($.inferred_parameter)),  // Parameters, inferred (identifiers)
+      ')',                     // Closing parenthesis for parameters
+      '->',                    // Arrow symbol separating parameters from body
+      $.expression             // The body of the lambda expression
+    ),
+    argument_list: $ => seq(
+      '(',                        // Opening parenthesis
+      optional(commaSep($.expression)),  // A list of expressions (arguments)
+      ')',                        // Closing parenthesis
+    ),
+    
+    record_pattern_body: $ => seq(
+      '{',                              // Opening brace for the pattern body
+      optional(commaSep($.field_pattern)), // List of field patterns (can be empty)
+      '}'
+    ),
+    
+    field_pattern: $ => seq(
+      $.identifier,                      // Field name
+      optional(seq(':', $.type)),         // Optional type annotation (e.g., name: String)
+    ),
+    
+    yield_statement: $ => seq(
+      'yield',              // The 'yield' keyword
+      $.expression,         // The expression that will be yielded
+      optional(';')         // The optional semicolon to end the statement
+    ),
+    
     
   },
 });
