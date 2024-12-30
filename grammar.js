@@ -51,6 +51,13 @@ module.exports = grammar({
     $.annotation           // Annotations (@Annotation).
   ],
 
+  inline: $ => [
+    $._name,
+    $._simple_type,
+    $._class_body_declaration,
+    $._variable_initializer,
+  ],
+
   word: $ => $.identifier, // Defines the default "word" for highlighting.
 
   rules: {
@@ -61,6 +68,21 @@ module.exports = grammar({
       $.statement,          // Top-level statements.
       $.method_declaration, // Method declarations.
       $.class_declaration   // Class declarations.
+    ),
+
+    _name: $ => choice(
+      $.identifier,
+      $._reserved_identifier,
+      $.scoped_identifier,
+    ),
+
+    _reserved_identifier: $ => choice(
+      'var', 'function', 'class', 'interface', 'enum', // Add all reserved keywords of Gosu
+      'extends', 'implements', 'null', 'true', 'false'
+    ),
+    scoped_identifier: $ => seq(
+      $.identifier,          // Base identifier
+      repeat(seq('.', $.identifier)) // Dotted names for scope, e.g., `com.example.MyClass`
     ),
 
     declaration: $ => choice(
@@ -290,6 +312,33 @@ module.exports = grammar({
       $.block
     ), 
     // Matches individual statements or nested blocks.
+
+    _variable_initializer: $ => choice(
+      $.expression,              // General expressions for initialization
+      $.array_initializer,       // Array initializers (e.g., `{1, 2, 3}`)
+      $.object_initializer        // Object initializers (e.g., `new MyClass()`)
+    ),
+    
+    // Supporting rules:
+    array_initializer: $ => seq(
+      '{',                       // Starts with a curly brace
+      optional(commaSep($.expression)), // Comma-separated expressions
+      '}'
+    ),
+    
+    object_initializer: $ => seq(
+      'new',                     // `new` keyword for creating an object
+      $.identifier,              // Class name or type
+      optional($.arguments)      // Arguments to the constructor (if any)
+    ),
+    
+    // Utility to match comma-separated expressions
+    arguments: $ => seq(
+      '(',                       // Start with parenthesis
+      optional(commaSep($.expression)), // Arguments are comma-separated
+      ')'
+    ),
+    
   },
 
   conflicts: $ => [
