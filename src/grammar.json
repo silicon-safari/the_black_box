@@ -2381,6 +2381,56 @@
           }
         }
       ]
+    },
+    "generic_type": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type"
+                },
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "STRING",
+                        "value": ","
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "type"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ">"
+        }
+      ]
     }
   },
   "extras": [
@@ -2417,6 +2467,18 @@
       "_unannotated_type",
       "primary_expression",
       "scoped_type_identifier"
+    ],
+    [
+      "_unannotated_type",
+      "scoped_type_identifier"
+    ],
+    [
+      "_unannotated_type",
+      "generic_type"
+    ],
+    [
+      "generic_type",
+      "primary_expression"
     ]
   ],
   "precedences": [],

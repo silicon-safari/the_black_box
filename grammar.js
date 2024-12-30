@@ -63,6 +63,9 @@ module.exports = grammar({
     [$.modifiers, $.annotated_type, $.module_declaration, $.package_declaration],
     [$._unannotated_type, $.primary_expression],
     [$._unannotated_type, $.primary_expression, $.scoped_type_identifier],
+    [$._unannotated_type, $.scoped_type_identifier],
+    [$._unannotated_type, $.generic_type],
+    [$.generic_type, $.primary_expression],
   ],
 
   word: $ => $.identifier, // Defines the default "word" for highlighting.
@@ -383,6 +386,12 @@ module.exports = grammar({
       repeat(seq('.', $.identifier)) // Optional parts separated by dots
     ),
     
+    generic_type: $ => seq(
+      $.identifier,              // The base type (e.g., List, Map)
+      '<',                       // Opening angle bracket
+      commaSep($.type),          // One or more type parameters, separated by commas
+      '>'                        // Closing angle bracket
+    ),
     
   },
 });
