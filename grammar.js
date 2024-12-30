@@ -60,6 +60,7 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$.modifiers, $.annotated_type, $.receiver_parameter],
+    [$.modifiers, $.annotated_type, $.module_declaration, $.package_declaration],
   ],
 
   word: $ => $.identifier, // Defines the default "word" for highlighting.
@@ -352,12 +353,21 @@ module.exports = grammar({
       $.type,                 // The type of the receiver
       $.identifier            // The identifier (e.g., `this` or a qualified name)
     ),
+    module_declaration: $ => seq(
+      optional($.modifiers), // Optional modifiers
+      'module',              // The 'module' keyword
+      $.identifier,          // The name of the module
+      $.block                // The block of code inside the module
+    ),
+    
+    package_declaration: $ => seq(
+      'package',             // The 'package' keyword
+      $.identifier,          // The name of the package
+      optional(seq(';'))     // Optional semicolon at the end
+    ),
+    
     
   },
-
-  conflicts: $ => [
-    [$.modifiers, $.annotated_type],
-  ],
 });
 
 /**
