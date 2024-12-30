@@ -2320,6 +2320,39 @@
           ]
         }
       ]
+    },
+    "_unannotated_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "int"
+        },
+        {
+          "type": "STRING",
+          "value": "float"
+        },
+        {
+          "type": "STRING",
+          "value": "string"
+        },
+        {
+          "type": "STRING",
+          "value": "boolean"
+        },
+        {
+          "type": "STRING",
+          "value": "Date"
+        },
+        {
+          "type": "STRING",
+          "value": "BigDecimal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        }
+      ]
     }
   },
   "extras": [
@@ -2347,6 +2380,10 @@
       "annotated_type",
       "module_declaration",
       "package_declaration"
+    ],
+    [
+      "_unannotated_type",
+      "primary_expression"
     ]
   ],
   "precedences": [],

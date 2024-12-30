@@ -61,6 +61,7 @@ module.exports = grammar({
   conflicts: $ => [
     [$.modifiers, $.annotated_type, $.receiver_parameter],
     [$.modifiers, $.annotated_type, $.module_declaration, $.package_declaration],
+    [$._unannotated_type, $.primary_expression],
   ],
 
   word: $ => $.identifier, // Defines the default "word" for highlighting.
@@ -364,6 +365,16 @@ module.exports = grammar({
       'package',             // The 'package' keyword
       $.identifier,          // The name of the package
       optional(seq(';'))     // Optional semicolon at the end
+    ),
+    
+    _unannotated_type: $ => choice(
+      'int',             // Basic integer type
+      'float',           // Basic floating point type
+      'string',          // Basic string type
+      'boolean',         // Basic boolean type
+      'Date',            // Basic Date type
+      'BigDecimal',      // Basic BigDecimal type
+      $.identifier       // Any other user-defined type (identifier)
     ),
     
     
