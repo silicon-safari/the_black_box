@@ -2353,6 +2353,34 @@
           "name": "identifier"
         }
       ]
+    },
+    "scoped_type_identifier": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "."
+              },
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            ]
+          }
+        }
+      ]
     }
   },
   "extras": [
@@ -2384,6 +2412,11 @@
     [
       "_unannotated_type",
       "primary_expression"
+    ],
+    [
+      "_unannotated_type",
+      "primary_expression",
+      "scoped_type_identifier"
     ]
   ],
   "precedences": [],

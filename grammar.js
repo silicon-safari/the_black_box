@@ -62,6 +62,7 @@ module.exports = grammar({
     [$.modifiers, $.annotated_type, $.receiver_parameter],
     [$.modifiers, $.annotated_type, $.module_declaration, $.package_declaration],
     [$._unannotated_type, $.primary_expression],
+    [$._unannotated_type, $.primary_expression, $.scoped_type_identifier],
   ],
 
   word: $ => $.identifier, // Defines the default "word" for highlighting.
@@ -375,6 +376,11 @@ module.exports = grammar({
       'Date',            // Basic Date type
       'BigDecimal',      // Basic BigDecimal type
       $.identifier       // Any other user-defined type (identifier)
+    ),
+    
+    scoped_type_identifier: $ => seq(
+      repeat1($.identifier),      // One or more identifiers
+      repeat(seq('.', $.identifier)) // Optional parts separated by dots
     ),
     
     
