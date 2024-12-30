@@ -58,6 +58,10 @@ module.exports = grammar({
     $._variable_initializer,
   ],
 
+  conflicts: $ => [
+    [$.modifiers, $.annotated_type, $.receiver_parameter],
+  ],
+
   word: $ => $.identifier, // Defines the default "word" for highlighting.
 
   rules: {
@@ -337,6 +341,16 @@ module.exports = grammar({
       '(',                       // Start with parenthesis
       optional(commaSep($.expression)), // Arguments are comma-separated
       ')'
+    ),
+    annotated_type: $ => seq(
+      repeat($.annotation), // Allows multiple annotations
+      $.type               // The type being annotated
+    ),
+    
+    receiver_parameter: $ => seq(
+      optional($.modifiers),   // Optional modifiers for the receiver
+      $.type,                 // The type of the receiver
+      $.identifier            // The identifier (e.g., `this` or a qualified name)
     ),
     
   },

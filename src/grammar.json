@@ -1730,24 +1730,20 @@
       }
     },
     "annotated_type": {
-      "type": "PREC",
-      "value": 19,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "annotation"
-            }
-          },
-          {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
             "type": "SYMBOL",
-            "name": "_simple_type"
+            "name": "annotation"
           }
-        ]
-      }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type"
+        }
+      ]
     },
     "_simple_type": {
       "type": "CHOICE",
@@ -2238,6 +2234,31 @@
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "receiver_parameter": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "modifiers"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
         }
       ]
     }
