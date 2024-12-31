@@ -189,8 +189,8 @@ module.exports = grammar({
 
     variable_declaration: $ => prec(PREC.DECL, seq(
       optional($.modifiers),              // Optional modifiers (public, private, etc.).
-      optional(seq(":", $.type)),         // Optional type declaration (e.g., : int).
       'var',                              // Keyword 'var'.
+      optional(seq(":", $.type)),         // Optional type declaration (e.g., : int).
       $.identifier,                       // Variable name.
       optional(seq('=', $.expression)),   // Optional initializer.
       ';'                                 // Statement terminator.
