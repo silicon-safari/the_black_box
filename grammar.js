@@ -1,449 +1,747 @@
-const DIGITS = token(choice('0', seq(/[1-9]/, optional(seq(optional('_'), sep1(/[0-9]+/, /_+/)))))); 
-// Matches numeric literals with optional underscores (e.g., 1_000).
-
-const DECIMAL_DIGITS = token(sep1(/[0-9]+/, '_')); 
-// Matches sequences of decimal digits separated by underscores.
-
-const HEX_DIGITS = token(sep1(/[A-Fa-f0-9]+/, '_')); 
-// Matches hexadecimal digits separated by underscores.
-
 const PREC = {
-  COMMENT: 0,           // Priority for comments.
-  ASSIGN: 1,            // Assignment operators (=).
-  DECL: 2,              // Declarations (e.g., var).
-  TERNARY: 3,           // Ternary operators (? :).
-  OR: 4,                // Logical OR (||).
-  AND: 5,               // Logical AND (&&).
-  BIT_OR: 6,            // Bitwise OR (|).
-  BIT_XOR: 7,           // Bitwise XOR (^).
-  BIT_AND: 8,           // Bitwise AND (&).
-  EQUALITY: 9,          // Equality (==, !=).
-  REL: 10,              // Relational operators (<, <=, >, >=).
-  SHIFT: 11,            // Shift operators (<<, >>).
-  ADD: 12,              // Addition and subtraction (+, -).
-  MULT: 13,             // Multiplication, division, modulus (*, /, %).
-  UNARY: 15,            // Unary operators (-, !, ~).
-  ARRAY: 16,            // Array access (e.g., arr[index]).
-  OBJ_ACCESS: 16,       // Object access (e.g., obj.field).
-  PARENS: 16,           // Parentheses for grouping.
-  CLASS_LITERAL: 17,    // Class literals.
-  TYPE: 18,             // Type-related operations.
-  ANNOTATED_TYPE: 19    // Annotated type-related precedence.
+  // https://introcs.cs.princeton.edu/java/11precedence/
+  COMMENT: 0,         // //  /*  */
+  ASSIGN: 1,          // =  += -=  *=  /=  %=  &=  ^=  |=  <<=  >>=  >>>=
+  DECL: 2,
+  ELEMENT_VAL: 2,
+  TERNARY: 3,         // ?:
+  OR: 4,              // ||
+  AND: 5,             // &&
+  BIT_OR: 6,          // |
+  BIT_XOR: 7,         // ^
+  BIT_AND: 8,         // &
+  EQUALITY: 9,        // ==  !=
+  GENERIC: 10,
+  REL: 10,            // <  <=  >  >=  instanceof
+  SHIFT: 11,          // <<  >>  >>>
+  ADD: 12,            // +  -
+  MULT: 13,           // *  /  %
+  CAST: 14,           // (Type)
+  OBJ_INST: 14,       // new
+  UNARY: 15,          // ++a  --a  a++  a--  +  -  !  ~
+  ARRAY: 16,          // [Index]
+  OBJ_ACCESS: 16,     // .
+  PARENS: 16,         // (Expression)
+  CLASS_LITERAL: 17,  // .
 };
 
 module.exports = grammar({
-  name: 'gosu', // Name of the grammar.
-
-  extras: $ => [
-    $.line_comment, // Line comments (//...).
-    $.block_comment, // Block comments (/*...*/).
-    /\s/,           // Whitespace.
-  ],
-
-  supertypes: $ => [
-    $.expression,          // General expression types.
-    $.declaration,         // Declaration types (var, method, etc.).
-    $.statement,           // Statement types.
-    $.primary_expression,  // Primary expression types.
-    $._literal,            // Literals (numbers, strings, etc.).
-    $.type,                // Types (int, float, etc.).
-    $._simple_type,        // Simple types.
-    $.annotation           // Annotations (@Annotation).
-  ],
-
-  inline: $ => [
-    $._name,
-    $._simple_type,
-    $._class_body_declaration,
-    $._variable_initializer,
-  ],
+  name: 'gosu',
 
   conflicts: $ => [
-    [$.modifiers, $.annotated_type, $.receiver_parameter],
-    [$.modifiers, $.annotated_type, $.module_declaration, $.package_declaration],
-    [$._unannotated_type, $.primary_expression],
-    [$._unannotated_type, $.primary_expression, $.scoped_type_identifier],
-    [$._unannotated_type, $.scoped_type_identifier],
-    [$._unannotated_type, $.generic_type],
-    [$.generic_type, $.primary_expression],
-    [$.lambda_expression, $.primary_expression],
-    [$.inferred_parameter, $.primary_expression],
-    [$.argument_list, $.record_pattern_body],
-    [$.yield_statement, $._reserved_identifier],
+    [$.primary_expression, $.type],
+    [$.expression, $.type],
+    [$.qualified_identifier, $.primary_expression],
   ],
 
-  word: $ => $.identifier, // Defines the default "word" for highlighting.
+  externals: $ => [
+    $._newline,
+    $._indent,
+    $._dedent
+  ],
+
+  extras: $ => [
+    /\s/,
+    $.comment,
+    $.line_comment
+  ],
 
   rules: {
-    program: $ => repeat($._toplevel_statement), 
-    // The entry point for parsing the program. It repeats top-level statements.
-
-    _toplevel_statement: $ => choice(
-      $.statement,          // Top-level statements.
-      $.method_declaration, // Method declarations.
-      $.class_declaration   // Class declarations.
+    source_file: $ => seq(
+      optional($.header),
+      repeat(choice(
+        $.class_declaration,
+        $.interface_declaration,
+        $.enum_declaration,
+        $.enhancement_declaration
+      ))
     ),
 
-    _name: $ => choice(
-      $.identifier,
-      $._reserved_identifier,
-      $.scoped_identifier,
+    header: $ => seq(
+      optional($.package_declaration),
+      optional($.uses_declaration)
     ),
 
-    _reserved_identifier: $ => choice(
-      'var', 'function', 'class', 'interface', 'enum', // Add all reserved keywords of Gosu
-      'extends', 'implements', 'null', 'true', 'false'
-    ),
-    scoped_identifier: $ => seq(
-      $.identifier,          // Base identifier
-      repeat(seq('.', $.identifier)) // Dotted names for scope, e.g., `com.example.MyClass`
+    package_declaration: $ => seq(
+      'package',
+      $.qualified_identifier,
+      ';'
     ),
 
-    declaration: $ => choice(
-      $.variable_declaration,     // Variable declarations.
-      $.method_declaration,       // Method declarations.
-      $.class_declaration         // Class declarations.
+    uses_declaration: $ => repeat1(
+      seq(
+        'uses',
+        $.uses_statement,
+        optional(';')
+      )
     ),
 
-    _literal: $ => choice(
-      $.decimal_integer_literal,
-      $.hex_integer_literal,
-      $.octal_integer_literal,
-      $.binary_integer_literal,
-      $.decimal_floating_point_literal,
-      $.hex_floating_point_literal,
-      $.number_literal,   // Number literals (e.g., 123, 3.14).
-      $.string_literal,   // String literals (e.g., "hello").
-      $.boolean_literal,  // Boolean literals (true, false).
-      $.null_literal      // Null literal (null).
-    ),
-    decimal_integer_literal: _ => token(seq(
-      DIGITS,
-      optional(choice('l', 'L')),
-    )),
-    // Matches decimal integer literal
-
-    hex_integer_literal: _ => token(seq(
-      choice('0x', '0X'),
-      HEX_DIGITS,
-      optional(choice('l', 'L')),
-    )),
-    // Matches the hexadecimal int
-
-    octal_integer_literal: _ => token(seq(
-      choice('0o', '0O', '0'),
-      sep1(/[0-7]+/, '_'),
-      optional(choice('l', 'L')),
-    )),
-    // Matches the Octal int
-
-    binary_integer_literal: _ => token(seq(
-      choice('0b', '0B'),
-      sep1(/[01]+/, '_'),
-      optional(choice('l', 'L')),
-    )),
-    // Matches the binary int
-
-    decimal_floating_point_literal: _ => token(choice(
-      seq(DECIMAL_DIGITS, '.', optional(DECIMAL_DIGITS), optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
-      seq('.', DECIMAL_DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), optional(/[fFdD]/)),
-      seq(DIGITS, /[eE]/, optional(choice('-', '+')), DECIMAL_DIGITS, optional(/[fFdD]/)),
-      seq(DIGITS, optional(seq((/[eE]/), optional(choice('-', '+')), DECIMAL_DIGITS)), (/[fFdD]/)),
-    )),
-    // floating point literal
-
-    hex_floating_point_literal: _ => token(seq(
-      choice('0x', '0X'),
-      choice(
-        seq(HEX_DIGITS, optional('.')),
-        seq(optional(HEX_DIGITS), '.', HEX_DIGITS),
-      ),
-      optional(seq(
-        /[pP]/,
-        optional(choice('-', '+')),
-        DIGITS,
-        optional(/[fFdD]/),
-      )),
-    )),
-    // hex floating point literal
-
-
-
-
-    number_literal: $ => /[0-9]+(\.[0-9]+)?/, 
-    // Matches integers and floating-point numbers.
-
-    string_literal: $ => /"[^"]*"/, 
-    // Matches string literals enclosed in double quotes.
-
-    boolean_literal: $ => choice('true', 'false'), 
-    // Matches boolean literals.
-
-    null_literal: $ => 'null', 
-    // Matches the null literal.
-
-    statement: $ => choice(
-      $.variable_declaration, // Variable declaration statements.
-      $.expression_statement  // Expression statements.
-    ),
-
-    variable_declaration: $ => prec(PREC.DECL, seq(
-      optional($.modifiers),              // Optional modifiers (public, private, etc.).
-      'var',                              // Keyword 'var'.
-      optional(seq(":", $.type)),         // Optional type declaration (e.g., : int).
-      $.identifier,                       // Variable name.
-      optional(seq('=', $.expression)),   // Optional initializer.
-      ';'                                 // Statement terminator.
-    )),
-
-    method_declaration: $ => seq(
-      optional($.modifiers),  // Optional modifiers.
-      'function',             // Keyword 'function'.
-      $.identifier,           // Method name.
-      $.parameters,           // Parameters list.
-      optional($.return_type),// Optional return type.
-      $.block                 // Method body.
+    uses_statement: $ => seq(
+      $.qualified_identifier,
+      optional(seq('.', '*'))
     ),
 
     class_declaration: $ => seq(
-      optional($.modifiers),       // Optional modifiers.
-      'class',                     // Keyword 'class'.
-      $.identifier,                // Class name.
-      optional($.extends_clause),  // Optional inheritance clause.
-      optional($.implements_clause), // Optional interface implementation.
-      $.class_body                 // Class body.
+      repeat($.annotation),
+      repeat($.modifier),
+      'class',
+      $.identifier,
+      optional($.type_parameters),
+      optional($.superclass),
+      optional($.interfaces),
+      $.class_body
     ),
 
-    modifiers: $ => repeat1(choice(
-      'public', 'private', 'protected', 'static', 
-      'final', 'abstract', 'synchronized'
-    )),
-    // Matches one or more modifiers.
-
-    parameters: $ => seq('(', commaSep($.parameter), ')'), 
-    // Method parameters enclosed in parentheses.
-
-    parameter: $ => seq($.type, $.identifier), 
-    // A single parameter (type and name).
-
-    return_type: $ => seq(':', $.type), 
-    // Specifies the return type of a method.
-
-    class_body: $ => seq('{', repeat($._class_body_declaration), '}'), 
-    // Class body enclosed in curly braces.
-
-    _class_body_declaration: $ => choice(
-      $.method_declaration, // Method declarations in the class.
-      $.field_declaration   // Field declarations in the class.
+    interface_declaration: $ => seq(
+      repeat($.annotation),
+      repeat($.modifier),
+      'interface',
+      $.identifier,
+      optional($.type_parameters),
+      optional(choice(
+        seq('extends', $.type_list),
+        seq('implements', $.type_list)
+      )),
+      $.interface_body
     ),
 
-    field_declaration: $ => seq(
-      optional($.modifiers), // Optional modifiers.
-      $.type,                // Field type.
-      $.identifier,          // Field name.
-      optional(seq('=', $.expression)), // Optional initializer.
-      ';'                    // Statement terminator.
+    enum_declaration: $ => seq(
+      repeat($.annotation),
+      repeat($.modifier),
+      'enum',
+      $.identifier,
+      optional($.type_parameters),
+      optional($.interfaces),
+      $.enum_body
     ),
 
-    type: $ => prec(PREC.TYPE, choice(
-      $._simple_type,        // Simple types (int, string, etc.).
-      $.identifier           // Custom or complex types.
-    )),
-
-    annotated_type: $ => prec(PREC.ANNOTATED_TYPE, seq(
-      repeat($.annotation),  // Annotations (e.g., @Override).
-      $._simple_type         // Simple type being annotated.
-    )),
-
-    _simple_type: $ => choice(
-      'int', 'float', 'string', 'boolean', // Primitive types.
-      $.identifier                        // Custom types.
+    enhancement_declaration: $ => seq(
+      repeat($.annotation),
+      repeat($.modifier),
+      'enhancement',
+      $.identifier,
+      optional($.type_parameters),
+      ':',
+      $.type,
+      repeat(seq('[', ']')),
+      $.enhancement_body
     ),
 
     annotation: $ => seq(
-      '@',                  // Annotation prefix.
-      $.identifier,         // Annotation name.
-      optional($.annotation_arguments) // Optional arguments.
+      '@',
+      $.qualified_identifier,
+      optional($.type_arguments),
+      optional($.annotation_arguments)
     ),
 
     annotation_arguments: $ => seq(
-      '(', commaSep($.expression), ')'
+      '(',
+      optional($.argument_list),
+      ')'
     ),
-    // Arguments passed to annotations.
 
-    expression_statement: $ => seq($.expression, ';'), 
-    // Expression followed by a semicolon.
+    modifier: $ => choice(
+      'public',
+      'protected',
+      'private',
+      'internal',
+      'static',
+      'abstract',
+      'final',
+      'override',
+      'transient'
+    ),
+
+    type_parameters: $ => seq(
+      '<',
+      $.type_parameter,
+      repeat(seq(',', $.type_parameter)),
+      '>'
+    ),
+
+    type_parameter: $ => seq(
+      $.identifier,
+      optional(seq('extends', $.type_bound))
+    ),
+
+    type_bound: $ => seq(
+      $.type,
+      repeat(seq('&', $.type))
+    ),
+
+    type_arguments: $ => seq(
+      '<',
+      $.type_argument,
+      repeat(seq(',', $.type_argument)),
+      '>'
+    ),
+
+    type_argument: $ => choice(
+      $.type,
+      seq('?', optional(seq(
+        choice('extends', 'super'),
+        $.type
+      )))
+    ),
+
+    superclass: $ => seq(
+      'extends',
+      $.type
+    ),
+
+    interfaces: $ => seq(
+      'implements',
+      $.type_list
+    ),
+
+    type_list: $ => seq(
+      $.type,
+      repeat(seq(',', $.type))
+    ),
+
+    class_body: $ => seq(
+      '{',
+      repeat($.class_member),
+      '}'
+    ),
+
+    interface_body: $ => seq(
+      '{',
+      repeat($.interface_member),
+      '}'
+    ),
+
+    enum_body: $ => seq(
+      '{',
+      optional($.enum_constants),
+      repeat($.class_member),
+      '}'
+    ),
+
+    enhancement_body: $ => seq(
+      '{',
+      repeat($.enhancement_member),
+      '}'
+    ),
+
+    enum_constants: $ => seq(
+      $.enum_constant,
+      repeat(seq(',', $.enum_constant)),
+      optional(','),
+      optional(';')
+    ),
+
+    enum_constant: $ => seq(
+      repeat($.annotation),
+      $.identifier,
+      optional($.arguments)
+    ),
+
+    class_member: $ => choice(
+      $.field_declaration,
+      $.method_declaration,
+      $.constructor_declaration,
+      $.property_declaration,
+      $.delegate_declaration,
+      $.class_declaration,
+      $.interface_declaration,
+      $.enum_declaration
+    ),
+
+    interface_member: $ => choice(
+      $.method_declaration,
+      $.property_declaration,
+      $.field_declaration
+    ),
+
+    enhancement_member: $ => choice(
+      seq($.method_declaration, $.method_body),
+      seq($.property_declaration, $.method_body)
+    ),
+
+    field_declaration: $ => seq(
+      repeat($.modifier),
+      'var',
+      $.identifier,
+      optional($.type_annotation),
+      optional(seq(
+        'as',
+        optional('readonly'),
+        $.identifier
+      )),
+      optional(seq('=', $.expression)),
+      optional(';')
+    ),
+
+    method_declaration: $ => seq(
+      repeat($.modifier),
+      'function',
+      $.identifier,
+      optional($.type_parameters),
+      $.formal_parameters,
+      optional($.type_annotation),
+      optional($.method_body)
+    ),
+
+    constructor_declaration: $ => seq(
+      repeat($.modifier),
+      'construct',
+      $.formal_parameters,
+      optional($.type_annotation),
+      $.method_body
+    ),
+
+    property_declaration: $ => seq(
+      repeat($.modifier),
+      'property',
+      choice('get', 'set'),
+      $.identifier,
+      $.formal_parameters,
+      optional($.type_annotation),
+      optional($.method_body)
+    ),
+
+    delegate_declaration: $ => seq(
+      'delegate',
+      $.identifier,
+      optional($.type_annotation),
+      'represents',
+      $.type_list,
+      optional(seq('=', $.expression))
+    ),
+
+    type_annotation: $ => seq(
+      ':',
+      $.type
+    ),
+
+    type: $ => choice(
+      seq($.qualified_identifier, repeat(seq('[', ']'))),
+      seq('block', $.block_type)
+    ),
+
+    block_type: $ => seq(
+      '(',
+      optional($.block_parameters),
+      ')',
+      optional($.type_annotation)
+    ),
+
+    block_parameters: $ => seq(
+      $.block_parameter,
+      repeat(seq(',', $.block_parameter))
+    ),
+
+    block_parameter: $ => choice(
+      seq($.identifier, optional(seq('=', $.expression))),
+      seq($.identifier, ':', $.type, optional(seq('=', $.expression)))
+    ),
+
+    formal_parameters: $ => seq(
+      '(',
+      optional($.formal_parameter_list),
+      ')'
+    ),
+
+    formal_parameter_list: $ => seq(
+      $.formal_parameter,
+      repeat(seq(',', $.formal_parameter))
+    ),
+
+    formal_parameter: $ => seq(
+      repeat($.annotation),
+      optional('final'),
+      $.identifier,
+      optional(choice(
+        seq(':', $.type, optional(seq('=', $.expression))),
+        $.block_type,
+        seq('=', $.expression)
+      ))
+    ),
+
+    method_body: $ => $.block,
+
+    block: $ => seq(
+      '{',
+      repeat($.statement),
+      '}'
+    ),
+
+    statement: $ => choice(
+      $.block,
+      $.if_statement,
+      $.while_statement,
+      $.do_while_statement,
+      $.for_statement,
+      $.foreach_statement,
+      $.try_statement,
+      $.switch_statement,
+      $.return_statement,
+      $.throw_statement,
+      $.assert_statement,
+      seq('break', optional(';')),
+      seq('continue', optional(';')),
+      $.expression_statement,
+      $.variable_declaration,
+      $.using_statement,
+      ';'
+    ),
+
+    if_statement: $ => seq(
+      'if',
+      '(',
+      $.expression,
+      ')',
+      $.statement,
+      optional(seq('else', $.statement))
+    ),
+
+    while_statement: $ => seq(
+      'while',
+      '(',
+      $.expression,
+      ')',
+      $.statement
+    ),
+
+    do_while_statement: $ => seq(
+      'do',
+      $.statement,
+      'while',
+      '(',
+      $.expression,
+      ')',
+      optional(';')
+    ),
+
+    for_statement: $ => seq(
+      'for',
+      '(',
+      choice(
+        $.variable_declaration,
+        $.expression_statement,
+        ';'
+      ),
+      optional($.expression),
+      ';',
+      optional($.expression),
+      ')',
+      $.statement
+    ),
+
+    foreach_statement: $ => seq(
+      choice('foreach', 'for'),
+      '(',
+      choice(
+        seq(optional('var'), $.identifier, 'in', $.expression),
+        $.expression
+      ),
+      ')',
+      $.statement
+    ),
+
+    try_statement: $ => seq(
+      'try',
+      $.block,
+      choice(
+        seq(
+          repeat1($.catch_clause),
+          optional($.finally_clause)
+        ),
+        $.finally_clause
+      )
+    ),
+
+    catch_clause: $ => seq(
+      'catch',
+      '(',
+      optional('var'),
+      $.identifier,
+      optional($.type_annotation),
+      ')',
+      $.block
+    ),
+
+    finally_clause: $ => seq(
+      'finally',
+      $.block
+    ),
+
+    switch_statement: $ => seq(
+      'switch',
+      '(',
+      $.expression,
+      ')',
+      '{',
+      repeat($.switch_block_statement_group),
+      '}'
+    ),
+
+    switch_block_statement_group: $ => seq(
+      choice(
+        seq('case', $.expression),
+        'default'
+      ),
+      ':',
+      repeat($.statement)
+    ),
+
+    return_statement: $ => seq(
+      'return',
+      optional($.expression),
+      optional(';')
+    ),
+
+    throw_statement: $ => seq(
+      'throw',
+      $.expression,
+      optional(';')
+    ),
+
+    assert_statement: $ => seq(
+      'assert',
+      $.expression,
+      optional(seq(':', $.expression)),
+      optional(';')
+    ),
+
+    using_statement: $ => seq(
+      'using',
+      '(',
+      choice(
+        $.variable_declaration,
+        seq($.variable_declaration, repeat(seq(',', $.variable_declaration))),
+        $.expression
+      ),
+      ')',
+      $.block,
+      optional(seq('finally', $.block))
+    ),
+
+    expression_statement: $ => seq(
+      $.expression,
+      optional(';')
+    ),
+
+    variable_declaration: $ => seq(
+      optional('final'),
+      'var',
+      $.identifier,
+      optional($.type_annotation),
+      optional(seq('=', $.expression)),
+      optional(';')
+    ),
 
     expression: $ => choice(
-      $.assignment_expression, // Assignments.
-      $.binary_expression,     // Binary operations.
-      $.primary_expression     // Primary expressions.
+      $.assignment_expression,
+      $.conditional_expression,
+      $.lambda_expression
     ),
 
-    assignment_expression: $ => prec(PREC.ASSIGN, seq(
-      $.identifier, '=', $.expression
+    assignment_expression: $ => prec.right('assignment', seq(
+      $.primary_expression,
+      choice(
+        '=',
+        '+=',
+        '-=',
+        '*=',
+        '/=',
+        '%=',
+        '&=',
+        '|=',
+        '^=',
+        '<<=',
+        '>>=',
+        '>>>='
+      ),
+      $.expression
     )),
-    // Assignment of a value to a variable.
 
-    binary_expression: $ => choice(
-      prec.left(PREC.OR, seq($.expression, '||', $.expression)), // Logical OR.
-      prec.left(PREC.AND, seq($.expression, '&&', $.expression)), // Logical AND.
-      // More binary operators follow...
+    conditional_expression: $ => prec.right('conditional', seq(
+      $.logical_or_expression,
+      optional(choice(
+        seq('?', $.expression, ':', $.expression),
+        seq('?:', $.expression)
+      ))
+    )),
+
+    logical_or_expression: $ => prec.left('logical_or', seq(
+      $.logical_and_expression,
+      repeat(seq(
+        choice('||', 'or'),
+        $.logical_and_expression
+      ))
+    )),
+
+    logical_and_expression: $ => prec.left('logical_and', seq(
+      $.bitwise_or_expression,
+      repeat(seq(
+        choice('&&', 'and'),
+        $.bitwise_or_expression
+      ))
+    )),
+
+    bitwise_or_expression: $ => prec.left('bitwise_or', seq(
+      $.bitwise_xor_expression,
+      repeat(seq(
+        '|',
+        $.bitwise_xor_expression
+      ))
+    )),
+
+    bitwise_xor_expression: $ => prec.left('bitwise_xor', seq(
+      $.bitwise_and_expression,
+      repeat(seq(
+        '^',
+        $.bitwise_and_expression
+      ))
+    )),
+
+    bitwise_and_expression: $ => prec.left('bitwise_and', seq(
+      $.equality_expression,
+      repeat(seq(
+        '&',
+        $.equality_expression
+      ))
+    )),
+
+    equality_expression: $ => prec.left('equality', seq(
+      $.relational_expression,
+      repeat(seq(
+        choice('===', '!==', '==', '!=', '<>'),
+        $.relational_expression
+      ))
+    )),
+
+    relational_expression: $ => prec.left('relational', seq(
+      $.shift_expression,
+      repeat(seq(
+        choice('<=', '>=', '<', '>', 'typeis'),
+        $.shift_expression
+      ))
+    )),
+
+    shift_expression: $ => prec.left('shift', seq(
+      $.additive_expression,
+      repeat(seq(
+        choice('<<', '>>', '>>>'),
+        $.additive_expression
+      ))
+    )),
+
+    additive_expression: $ => prec.left('additive', seq(
+      $.multiplicative_expression,
+      repeat(seq(
+        choice('+', '-', '?+', '?-'),
+        $.multiplicative_expression
+      ))
+    )),
+
+    multiplicative_expression: $ => prec.left('multiplicative', seq(
+      $.unary_expression,
+      repeat(seq(
+        choice('*', '/', '%', '?*', '?/', '?%'),
+        $.unary_expression
+      ))
+    )),
+
+    unary_expression: $ => prec.left('unary', choice(
+      seq(choice('+', '-', '~', '!', 'not', 'typeof', 'statictypeof'), $.unary_expression),
+      $.postfix_expression
+    )),
+
+    postfix_expression: $ => prec.left(seq(
+      $.primary_expression,
+      repeat(choice(
+        seq('.', $.identifier),
+        seq('?.', $.identifier),
+        seq('*.', $.identifier),
+        $.arguments,
+        seq('[', $.expression, ']'),
+        $.type_arguments
+      ))
+    )),
+    qualified_identifier: $ => seq(
+      $.identifier,
+      repeat(seq('.', $.identifier))
+    ),
+    identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
+    argument_list: $ => seq(
+      '(',
+      optional(commaSep($.expression)),
+      ')'
     ),
 
-    primary_expression: $ => choice(
-      $.identifier, 
-      $.number, 
+    // Expression (simplified for this example)
+    expression: $ => choice(
+      $.identifier,
+      $.literal
+    ),
+
+    // Literal (e.g., numbers, strings)
+    literal: $ => choice(
+      $.number,
       $.string
     ),
 
-    identifier: $ => /[a-zA-Z_]\w*/, 
-    // Matches valid identifiers (variables, methods, etc.).
+    number: $ => /\d+(\.\d+)?/,
+    string: $ => /"([^"\\]|\\.)*"/,
 
-    number: $ => token(/[0-9]+/), 
-    // Matches numeric literals.
-
-    string: $ => /"[^"]*"/, 
-    // Matches string literals.
-
-    line_comment: $ => token(seq('//', /.*/)), 
-    // Matches single-line comments.
-
-    block_comment: $ => token(seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')), 
-    // Matches block comments.
-
-    extends_clause: $ => seq('extends', $.type), 
-    // Inheritance clause for classes.
-
-    implements_clause: $ => seq('implements', commaSep1($.type)), 
-    // Interface implementation clause.
-
-    block: $ => seq('{', repeat($._statement), '}'), 
-    // Block of statements enclosed in curly braces.
-
-    _statement: $ => choice(
-      $.statement, 
-      $.block
-    ), 
-    // Matches individual statements or nested blocks.
-
-    _variable_initializer: $ => choice(
-      $.expression,              // General expressions for initialization
-      $.array_initializer,       // Array initializers (e.g., `{1, 2, 3}`)
-      $.object_initializer        // Object initializers (e.g., `new MyClass()`)
+    // Statement (for demonstration purposes)
+    statement: $ => choice(
+      seq($.identifier, $.argument_list),
+      $.expression
     ),
-    
-    // Supporting rules:
-    array_initializer: $ => seq(
-      '{',                       // Starts with a curly brace
-      optional(commaSep($.expression)), // Comma-separated expressions
-      '}'
-    ),
-    
-    object_initializer: $ => seq(
-      'new',                     // `new` keyword for creating an object
-      $.identifier,              // Class name or type
-      optional($.arguments)      // Arguments to the constructor (if any)
-    ),
-    
-    // Utility to match comma-separated expressions
     arguments: $ => seq(
-      '(',                       // Start with parenthesis
-      optional(commaSep($.expression)), // Arguments are comma-separated
+      '(',
+      optional(commaSep($.expression)),
       ')'
     ),
-    annotated_type: $ => seq(
-      repeat($.annotation), // Allows multiple annotations
-      $.type               // The type being annotated
+    primary_expression: $ => choice(
+      $.literal,               // Literals like numbers or strings
+      $.identifier,            // Variable or function names
+      $.parenthesized_expression, // Parenthesized expressions
+      $.function_call          // Function calls
     ),
-    
-    receiver_parameter: $ => seq(
-      optional($.modifiers),   // Optional modifiers for the receiver
-      $.type,                 // The type of the receiver
-      $.identifier            // The identifier (e.g., `this` or a qualified name)
+    parenthesized_expression: $ => seq(
+      '(',
+      $.expression,
+      ')'
     ),
-    module_declaration: $ => seq(
-      optional($.modifiers), // Optional modifiers
-      'module',              // The 'module' keyword
-      $.identifier,          // The name of the module
-      $.block                // The block of code inside the module
+    function_call: $ => seq(
+      $.identifier,         // Function name
+      $.arguments           // Argument list
     ),
-    
-    package_declaration: $ => seq(
-      'package',             // The 'package' keyword
-      $.identifier,          // The name of the package
-      optional(seq(';'))     // Optional semicolon at the end
+    // Comments
+    comment: $ => choice(
+      $.line_comment,
+      $.multi_line_comment
     ),
-    
-    _unannotated_type: $ => choice(
-      'int',             // Basic integer type
-      'float',           // Basic floating point type
-      'string',          // Basic string type
-      'boolean',         // Basic boolean type
-      'Date',            // Basic Date type
-      'BigDecimal',      // Basic BigDecimal type
-      $.identifier       // Any other user-defined type (identifier)
-    ),
-    
-    scoped_type_identifier: $ => seq(
-      repeat1($.identifier),      // One or more identifiers
-      repeat(seq('.', $.identifier)) // Optional parts separated by dots
-    ),
-    
-    generic_type: $ => seq(
-      $.identifier,              // The base type (e.g., List, Map)
-      '<',                       // Opening angle bracket
-      commaSep($.type),          // One or more type parameters, separated by commas
-      '>'                        // Closing angle bracket
-    ),
-    lambda_expression: $ => seq(
-      '(',                      // Opening parenthesis for parameters
-      optional(commaSep($.identifier)),  // Parameters, separated by commas (if any)
-      ')',                      // Closing parenthesis for parameters
-      '->',                     // Arrow symbol separating parameters from body
-      $.expression              // The body of the lambda expression
-    ),
-    inferred_parameter: $ => $.identifier,  // Inferred parameters are just identifiers
 
-    lambda_expression: $ => seq(
-      '(',                     // Opening parenthesis for parameters
-      optional(commaSep($.inferred_parameter)),  // Parameters, inferred (identifiers)
-      ')',                     // Closing parenthesis for parameters
-      '->',                    // Arrow symbol separating parameters from body
-      $.expression             // The body of the lambda expression
+    // Single-line comments (e.g., // comment text)
+    line_comment: $ => token(
+      seq('//', /[^\n]*/)
     ),
-    argument_list: $ => seq(
-      '(',                        // Opening parenthesis
-      optional(commaSep($.expression)),  // A list of expressions (arguments)
-      ')',                        // Closing parenthesis
+
+    // Multi-line comments (e.g., /* comment text */)
+    multi_line_comment: $ => token(
+      seq(
+        '/*',
+        /[^*]*\*+([^/*][^*]*\*+)*/,
+        '/'
+      )
     ),
-    
-    record_pattern_body: $ => seq(
-      '{',                              // Opening brace for the pattern body
-      optional(commaSep($.field_pattern)), // List of field patterns (can be empty)
-      '}'
-    ),
-    
-    field_pattern: $ => seq(
-      $.identifier,                      // Field name
-      optional(seq(':', $.type)),         // Optional type annotation (e.g., name: String)
-    ),
-    
-    yield_statement: $ => seq(
-      'yield',              // The 'yield' keyword
-      $.expression,         // The expression that will be yielded
-      optional(';')         // The optional semicolon to end the statement
-    ),
-    
-    
-  },
+  }
 });
 
 /**
- * Creates a rule to match one or more of the rules separated by `separator`.
- * @param {RuleOrLiteral} rule
- * @param {RuleOrLiteral} separator
- */
+* Creates a rule to match one or more of the rules separated by `separator`.statement: $ => choice(
+      $.qualified_identifier,
+      // Add other statement types here
+    ),
+* @param {RuleOrLiteral} rule
+* @param {RuleOrLiteral} separator
+*/
 function sep1(rule, separator) {
   return seq(rule, repeat(seq(separator, rule)));
 }
